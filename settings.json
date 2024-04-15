@@ -2,10 +2,10 @@
   "window_title": "Collection Sharing App",
   "window_height": 400,
   "window_width": 640,
-  "penumbra_path": "C:\\Users\\jadow\\AppData\\Roaming\\XIVLauncher\\pluginConfigs",
+  "penumbra_path": "",
   "advanced_mode": false,
-  "collections_folder": "C:\\Users\\jadow\\AppData\\Roaming\\XIVLauncher\\pluginConfigs\\Penumbra\\collections",
-  "active_collections": "C:\\Users\\jadow\\AppData\\Roaming\\XIVLauncher\\pluginConfigs\\Penumbra\\active_collections.json",
-  "modification_folder": "E:\\Penumbra Mods",
+  "collections_folder": "",
+  "active_collections": "",
+  "modification_folder": "",
   "font_family": "Segoe UI"
 }
