@@ -1,0 +1,56 @@
+{
+  "collection_json": {
+    "Version": 1,
+    "Name": "Default",
+    "Settings": {
+      "Bibo+": {
+        "Settings": {
+          "Skin Slot B: ": 1,
+          "Old People": 1,
+          "Midlander/ Elezen/ Miqo'te Softness": 1,
+          "Highlander & Roegdayn Softness": 4,
+          "Viera Softness": 1,
+          "Au Ra - Raen Softness": 1,
+          "Au Ra - Xaela Softness": 1,
+          "Midlander/ Elezen/ Miqo'te Pube Style": 0,
+          "Highlander & Roegadyn Pube Style": 0,
+          "Viera Pube Style": 0,
+          "Au Ra - Raen Pube Style": 0,
+          "Au Ra - Xaela Pube Style": 0,
+          "Bibo+ Breasts - Emperor's": 2,
+          "Bibo+ Breasts - Small Clothes": 2,
+          "Bibo+ Breasts - Small Clothes (NPC)": 2,
+          "Bibo+ Legs - Emperor's New Breeches": 2,
+          "Bibo+ Legs - Small Clothes": 2,
+          "Bibo+ Legs - Small Clothes (NPC)": 2,
+          "Bibo+ Hands ": 7,
+          "Bibo+ Feet": 7,
+          "You're Done!": 0
+        },
+        "Priority": -6,
+        "Enabled": true
+      }
+    },
+    "Inheritance": []
+  },
+  "character_links": {
+    "Default": true,
+    "Interface": false,
+    "Current": false,
+    "Yourself": false,
+    "Individuals": []
+  },
+  "meta_data": {
+    "collection_name": "Default",
+    "version": "v24.04.15",
+    "comments": "Dummy Comment"
+  },
+  "mods_to_copy": [
+    [
+      "Bibo+",
+      "E:\\Penumbra Mods\\Bibo+",
+      852
+    ]
+  ],
+  "save_directory": "C:/Users/jadow/Downloads"
+}
