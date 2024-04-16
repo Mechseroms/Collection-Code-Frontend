@@ -195,3 +195,5 @@ dist/Collection Sharing App v1.0/icons/window_icon.png
 dist/Collection Sharing App v1.0/markupsafe/_speedups.cp310-win_amd64.pyd
 settings.json
 database.sqlite
+icons/avatars/Gabbie_avatar.png
+__pycache__/cloud_backend.cpython-312.pyc

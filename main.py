@@ -42,16 +42,20 @@ def build_and_update_collections_database():
         for id, collection_json in enumerate(collections_folder.glob("*")):    
             data = helper_functions.load_bom_json(collection_json)
             character_links = {}
+            
             for key, collection in active_collections.items():
                 if collection == data['Name']:
                     character_links[key] = True
                 else:
                     character_links[key] = False
+            
             collection_indvi = []
             for individual in individuals:
                 if individual['Collection'] == data['Name']:
                     collection_indvi.append(individual)
+            
             character_links['Individuals'] = collection_indvi
+            
             easySQL.insert_into_table(tables.collections, 
                 (id,
                 data['Version'],

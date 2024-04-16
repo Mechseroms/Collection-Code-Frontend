@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QIcon, QFont
 from qtwidgets import Toggle
 from striprtf.striprtf import rtf_to_text
+from cloud_backend import LoginDialog
 
 import export_process, import_process
 import settings, pathlib, os, sys, icons, easySQL, tables, json, zipfile
@@ -41,7 +42,6 @@ class MainGui(QMainWindow):
 
         self.widget = QWidget()
 
-
         self.tool_bar = QToolBar()
         self.addToolBar(self.tool_bar)
         self.tool_bar.setMovable(False)
@@ -60,6 +60,7 @@ class MainGui(QMainWindow):
         self.import_tool.setIcon(QIcon(icons.import_icon))
         self.import_tool.triggered.connect(self.import_collection)        
         self.tool_bar.addAction(self.import_tool)
+        
         # need an export button that exports a selected collection in the list
         self.export_tool = QAction("Export Collection to Archive", self)
         self.export_tool.setToolTip("Export collection from Penumbra installation into a share-able PCMP archive")
@@ -108,15 +109,14 @@ class MainGui(QMainWindow):
         # need a database connection indicator
         self.database_indicator = QAction("Database Status", self)
         self.database_indicator.setIcon(QIcon(icons.database_bad))
-        self.database_indicator.setEnabled(False)
         self.tool_bar.addAction(self.database_indicator)
         # need a sign-in/profile placard that acts as a button to change login info
         self.profile_indicator = QToolButton()
         self.profile_indicator.setText("Profile/Login")
         self.profile_indicator.setToolTip("If a server is configured use this to attempt so sign in to a profile on that server. This profile will be used for when uploading a collection.")
         self.profile_indicator.setIcon(QIcon(icons.profile))
-        self.profile_indicator.setEnabled(False)
         self.profile_indicator.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.profile_indicator.clicked.connect(self.login_user)
         self.tool_bar.addWidget(self.profile_indicator)
 
         # main vertical layout object
@@ -138,146 +138,146 @@ class MainGui(QMainWindow):
 
         # Close out collection Layout V
 
-        def create_advanced_panel():
-        # Details/Modlist Layout V
-            self.details_vertical_layout = QVBoxLayout()
-            
-            self.details_group = QGroupBox()
-            self.details_group.setTitle('Collection Details')
-
-            self.details_horizontal_layout = QHBoxLayout()
-
-            self.horizontal_form_layout = QGridLayout()
-            # ---- Form Control Start ---->
-            self.name_label = QLabel()
-            self.name_label.setText("Collection Name")
-            self.name_edit = QLineEdit()
-            self.name_edit.setMaximumWidth(200)
-
-            self.version_label = QLabel()
-            self.version_label.setText("Version")
-            self.version_edit = QLineEdit()
-            self.version_edit.setMaximumWidth(200)
-
-            self.comment_label = QLabel()
-            self.comment_label.setText("Comments")
-            
-            self.comment_edit = QTextEdit()
-            self.comment_edit.setMaximumHeight(150)
-            self.comment_edit.setMaximumHeight(250)
-
-
-            self.horizontal_form_layout.addWidget(self.name_label, 0, 0)
-            self.horizontal_form_layout.addWidget(self.name_edit, 0, 1)
-
-            self.horizontal_form_layout.addWidget(self.version_label, 1, 0)
-            self.horizontal_form_layout.addWidget(self.version_edit, 1, 1)
-            
-            self.horizontal_form_layout.addWidget(self.comment_label, 2, 0)
-            self.horizontal_form_layout.addWidget(self.comment_edit, 2, 1)
-
-            # ---- Form Control End ---->
-
-            self.details_group.setLayout(self.horizontal_form_layout)
-            self.details_group.setFixedHeight(300)
-            self.details_group.setMaximumWidth(500)
-
-
-            
-            self.character_links = QGroupBox()
-            self.character_links.setTitle("Character Links")
-            self.character_links.setFixedHeight(300)
-            self.character_links.setFixedWidth(200)
-
-            self.character_grid_layout = QGridLayout()
-            self.links_list = QListWidget()
-            self.character_grid_layout.addWidget(self.links_list)
-
-            self.character_links.setLayout(self.character_grid_layout)
-
-            self.search_horizontal_layout = QHBoxLayout()
-            
-            self.clear_filter_mods = QPushButton()
-            self.clear_filter_mods.setIcon(QIcon(icons.clear_filter))
-            self.clear_filter_mods.setMaximumWidth(30)
-            self.clear_filter_mods.setMaximumHeight(30)
-            
-            self.mod_list_search = QLineEdit()
-            self.mod_list_search.textEdited.connect(self.filter_mods)        
-            self.mod_list_search.setFixedHeight(30)
-            self.mod_list_search.setFixedWidth(200)
-
-            self.search_horizontal_layout.addWidget(self.clear_filter_mods)
-            self.search_horizontal_layout.addWidget(self.mod_list_search)
-
-            self.search_horizontal_layout.setSpacing(5)
-            self.search_horizontal_layout.setAlignment(Qt.AlignLeft)
-
-            
-            self.mod_list = QTreeWidget()
-
-            self.col2_frame = QFrame()
-            self.col2_frame.setFrameStyle(QFrame.Panel)
-            self.col2_frame.setFrameShadow(QFrame.Sunken)
-
-            self.font_combo_test = QPushButton(self.col2_frame)
-            self.font_combo_test.setText("set font")
-            self.font_combo_test.setGeometry(5, 5, 60, 25)
-            self.font_combo_test.clicked.connect(self.change_font_size)
-
-            self.details_horizontal_layout.addWidget(self.details_group)
-            self.details_horizontal_layout.addWidget(self.character_links)
-            self.details_horizontal_layout.addWidget(self.col2_frame)
-            
-            self.details_vertical_layout.addLayout(self.details_horizontal_layout)
-            self.details_vertical_layout.addLayout(self.search_horizontal_layout)
-            self.details_vertical_layout.addWidget(self.mod_list)
-            # ---- Details/Modlist Layout V ---- >
         
+        self.details_vertical_layout = QVBoxLayout()
+        
+        self.details_group = QGroupBox()
+        self.details_group.setTitle('Collection Details')
+
+        self.details_horizontal_layout = QHBoxLayout()
+
+        self.horizontal_form_layout = QGridLayout()
+        # ---- Form Control Start ---->
+        self.name_label = QLabel()
+        self.name_label.setText("Collection Name")
+        self.name_edit = QLineEdit()
+        self.name_edit.setMaximumWidth(200)
+
+        self.version_label = QLabel()
+        self.version_label.setText("Version")
+        self.version_edit = QLineEdit()
+        self.version_edit.setMaximumWidth(200)
+
+        self.comment_label = QLabel()
+        self.comment_label.setText("Comments")
+        
+        self.comment_edit = QTextEdit()
+        self.comment_edit.setMaximumHeight(150)
+        self.comment_edit.setMaximumHeight(250)
+
+
+        self.horizontal_form_layout.addWidget(self.name_label, 0, 0)
+        self.horizontal_form_layout.addWidget(self.name_edit, 0, 1)
+
+        self.horizontal_form_layout.addWidget(self.version_label, 1, 0)
+        self.horizontal_form_layout.addWidget(self.version_edit, 1, 1)
+        
+        self.horizontal_form_layout.addWidget(self.comment_label, 2, 0)
+        self.horizontal_form_layout.addWidget(self.comment_edit, 2, 1)
+
+        # ---- Form Control End ---->
+
+        self.details_group.setLayout(self.horizontal_form_layout)
+        self.details_group.setFixedHeight(300)
+        self.details_group.setMaximumWidth(500)
+        
+
+        self.character_links = QGroupBox()
+        self.character_links.setTitle("Character Links")
+        self.character_links.setFixedHeight(300)
+        self.character_links.setFixedWidth(200)
+
+        self.character_grid_layout = QGridLayout()
+        self.links_list = QListWidget()
+        self.character_grid_layout.addWidget(self.links_list)
+
+        self.character_links.setLayout(self.character_grid_layout)
+
+        self.search_horizontal_layout = QHBoxLayout()
+        
+        self.clear_filter_mods = QPushButton()
+        self.clear_filter_mods.setIcon(QIcon(icons.clear_filter))
+        self.clear_filter_mods.setMaximumWidth(30)
+        self.clear_filter_mods.setMaximumHeight(30)
+        
+        self.mod_list_search = QLineEdit()
+        self.mod_list_search.textEdited.connect(self.filter_mods)        
+        self.mod_list_search.setFixedHeight(30)
+        self.mod_list_search.setFixedWidth(200)
+
+        self.search_horizontal_layout.addWidget(self.clear_filter_mods)
+        self.search_horizontal_layout.addWidget(self.mod_list_search)
+
+        self.search_horizontal_layout.setSpacing(5)
+        self.search_horizontal_layout.setAlignment(Qt.AlignLeft)
+
+        
+        self.mod_list = QTreeWidget()
+
+
+        self.details_horizontal_layout.addWidget(self.details_group)
+        self.details_horizontal_layout.addWidget(self.character_links)
+        
+        self.details_vertical_layout.addLayout(self.details_horizontal_layout)
+        self.details_vertical_layout.addLayout(self.search_horizontal_layout)
+        self.details_vertical_layout.addWidget(self.mod_list)
+        # ---- Details/Modlist Layout V ---- >
+
+        self.advanced_widget_canvas = QWidget()
+        self.advanced_widget_canvas.setLayout(self.details_vertical_layout)
 
         self.horizontal_layout.addLayout(self.collection_vertical_layout)
+                
+
+        self.basic_vertical_layout = QVBoxLayout()
+        self.basic_horizontal_layout = QHBoxLayout()
+
+        self.basic_vertical_layout.addLayout(self.basic_horizontal_layout)
+
+        self.basic_group = QGroupBox()
+        self.basic_group.setTitle("Basic Mode Instructions")
+        self.basic_horizontal_layout.addWidget(self.basic_group)
+
+        self.group_layout = QGridLayout()
+        self.basic_group.setLayout(self.group_layout)
         
-        create_advanced_panel()
         
-        def create_basic_panel():
-            self.basic_vertical_layout = QGridLayout()
+        text = str()
+        with open("inst_text.rtf", "r+") as _file:
+            text = _file.read()
 
-            self.basic_group = QGroupBox()
-            self.basic_group.setTitle("Basic Mode Instructions")
+        text = rtf_to_text(text)
 
-            text = str()
-            with open("inst_text.rtf", "r+") as _file:
-                text = _file.read()
+        self.label1 = QLabel()
+        #self.label1.setAcceptRichText(True)
+        self.label1.setText(text)
+        self.label1.setWordWrap(True)
+        self.label1.setMinimumWidth(400)
+        
 
-            text = rtf_to_text(text)
+        self.group_layout.addWidget(self.label1, 0, 0)
+        self.group_layout.setAlignment(Qt.AlignLeft)
+        self.group_layout.addWidget(self.name_edit, 1, 0)
+        
 
-            self.label1 = QTextBrowser()
-            self.label1.setAcceptRichText(True)
-            self.label1.setText(text)
-            #self.label1.setWordWrap(True)
-            self.label1.setMinimumWidth(400)
-            
-
-
-
-            self.basic_vertical_layout.addWidget(self.label1, 0, 0)
-            
-            self.basic_vertical_layout.addWidget(self.name_edit, 3, 0)
-            self.basic_vertical_layout.setAlignment(Qt.AlignLeft)
-            self.basic_vertical_layout.setVerticalSpacing(1)
-            self.basic_group.setLayout(self.basic_vertical_layout)
-
+        self.basic_widget_canvas = QWidget()
+        self.basic_widget_canvas.setLayout(self.basic_vertical_layout)
+    
         # this is where the if split needs to happen
-        
-        create_basic_panel()
+    
+        basic_mode = True
+        advanced_mode = False
+        self.horizontal_layout.addWidget(self.advanced_widget_canvas)
+        self.horizontal_layout.addWidget(self.basic_widget_canvas)
 
-        basic_mode = False
-        advanced_mode = True
+
         if advanced_mode:
-            self.horizontal_layout.addLayout(self.details_vertical_layout)
-            self.horizontal_layout.removeWidget(self.basic_group)
+            self.basic_widget_canvas.setHidden(True)
+            self.advanced_widget_canvas.setHidden(False)
         if basic_mode:
-            self.horizontal_layout.addWidget(self.basic_group)
+            self.basic_widget_canvas.setHidden(False)
+            self.advanced_widget_canvas.setHidden(True)
+
 
         self.widget.setLayout(self.horizontal_layout)
         self.setCentralWidget(self.widget)
@@ -294,7 +294,6 @@ class MainGui(QMainWindow):
             # the user clicked OK and font is set to the font the user selected
             self.setFont(font)
 
-
     def __post__init__(self):
         self.repopulate_collections()
         self.repopulate_modslist()
@@ -307,9 +306,14 @@ class MainGui(QMainWindow):
         if a:
             self.setWindowTitle(f"{app_settings.get_setting('window_title')} (Advanced Mode)")
             app_settings.set_setting('advanced_mode', True)
+            self.basic_widget_canvas.setHidden(True)
+            self.advanced_widget_canvas.setHidden(False)
         else:
             self.setWindowTitle(f"{app_settings.get_setting('window_title')} (Basic Mode)")
             app_settings.set_setting('advanced_mode', False)
+            self.advanced_widget_canvas.setHidden(True)
+            self.basic_widget_canvas.setHidden(False)
+
 
         if not app_settings.get_setting('advanced_mode'):
             self.version_edit.setDisabled(True)
@@ -317,6 +321,7 @@ class MainGui(QMainWindow):
             self.links_list.setDisabled(True)
             self.mod_list_search.setDisabled(True)
             self.clear_filter_mods.setDisabled(True)
+            
         else:
             self.version_edit.setDisabled(False)
             self.comment_edit.setDisabled(False)
@@ -422,6 +427,14 @@ class MainGui(QMainWindow):
             self.progress_dialog = import_process.ImportProgressDialog(self, payload)
             self.progress_dialog.import_collection()
 
+    def login_user(self):
+        dialog = LoginDialog(self)
+        if dialog.exec_():
+            app_settings.user_data = dialog.user_data
+            self.profile_indicator.setIcon(QIcon(app_settings.user_data['avatar']))
+            self.profile_indicator.setText(app_settings.username)
+            self.database_indicator.setIcon(QIcon(icons.database_good))
+    
     def filter_mods(self):
         filter = self.mod_list_search.text()
         count = self.mod_list.topLevelItemCount()
