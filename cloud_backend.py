@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QDialog, QGridLayout, QLineEdit, QPushButton, QLabel
-import requests
+import requests, json
 from PIL import Image
 from io import BytesIO
 import settings
@@ -35,7 +35,7 @@ class LoginDialog(QDialog):
 
         self.connect_button = QPushButton()
         self.connect_button.setText("Connect")
-        self.connect_button.clicked.connect(self.login)
+        self.connect_button.clicked.connect(self.__login)
 
         self.grid_layout.addWidget(self.server_address_label, 0, 0)
         self.grid_layout.addWidget(self.server_address, 0, 1)
@@ -58,25 +58,58 @@ class LoginDialog(QDialog):
         self.setFixedSize(300, 200)
         self.user_data = {}
         self.show()
+    
+    def __login(self):
+        user_data = login(self.username.text(), self.password.text())
+        print(user_data)
+        if user_data != False:
+            self.user_data = user_data    
+        self.accept()
 
-    def login(self):
-        url = "http://127.0.0.1:5000/login_app"
-        headers = {'Content-Type': 'application/json'}
-        data = {
-            "username": self.username.text(),
-            "password": self.password.text()
-        }
-        response = requests.post(url, headers=headers, json=data)
-        self.user_data = {}
+
+def ping():
+    url = "http://127.0.0.1:5000/check_server"
+    request = requests.get(url)
+    if request.status_code == 200:
+        return True
+    return False
+
+def upload_file(filename, file_path, external_data: dict):
+    if ping():
+        external_data['username'] = settings.app_settings.username
+        external_data['password'] = settings.app_settings.password
+        external_data['filename'] = filename
+        files = [
+            ('file', ('file', open(file_path, 'rb'), 'application/octet')),
+            ('datas', ('datas', json.dumps(external_data), 'application/json')),
+        ]
+        r = requests.post(f"http://127.0.0.1:5000/upload_app", files=files)
+        print(r)
+        return True
+    return False
+
+def login(username, password):
+    url = "http://127.0.0.1:5000/login_app"
+    headers = {'Content-Type': 'application/json'}
+    data = {
+        "username": username,
+        "password": password
+    }
+    response = requests.post(url, headers=headers, json=data)
+    user_data = {}
+    if response.status_code == 200:
+        user_data = response.json()
+        app_settings.username = username
+        app_settings.password = password
+        
+        url = "http://127.0.0.1:5000/login_app/avatar"
+        response = requests.post(url, json=data)
         if response.status_code == 200:
-            self.user_data = response.json()
-            app_settings.username = self.username.text()
-            app_settings.password = self.password.text()
-            
-            url = "http://127.0.0.1:5000/login_app/avatar"
-            response = requests.post(url, json=data)
             im = Image.open(BytesIO(response.content))
             im.save(f"icons/avatars/{data['username']}_avatar.png")
-            self.user_data['avatar'] = f"icons/avatars/{data['username']}_avatar.png"    
-            self.accept()
+            user_data['avatar'] = f"icons/avatars/{data['username']}_avatar.png"
+            return user_data
+        user_data['avatar'] = f"icons/avatars/default_avatar.png"
+        return user_data
+    return False
             

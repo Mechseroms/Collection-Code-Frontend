@@ -197,3 +197,4 @@ settings.json
 database.sqlite
 icons/avatars/Gabbie_avatar.png
 __pycache__/cloud_backend.cpython-312.pyc
+test.json

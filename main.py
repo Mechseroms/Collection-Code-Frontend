@@ -8,14 +8,10 @@ from PyQt5 import QtCore
 from MainGui import MainGui
 import settings, helper_functions, easySQL, tables
 
-
-global app_settings 
-app_settings = settings.app_settings
-
 def penumbra_path_validation(parent):
     """ This function is a preload warning if penumbra is not installed in the correct path which is
     usually an indication it isnt installed at all."""
-    if not os.path.exists(app_settings.get_setting('penumbra_path')):
+    if not os.path.exists(settings.app_settings.get_setting('penumbra_path')):
         warning_dialog = QMessageBox(parent)
         warning_dialog.setWindowTitle('Incorrect Penumbra Installation...')
         warning_dialog.setText(f"""It appears that Penumbra is not installed on your system at: \n{app_settings.get_setting('penumbra_path')}\nThat means this program is useless to you at the moment! Please install Penumbra and follow its instructions before using this application!""")
@@ -28,11 +24,11 @@ def penumbra_path_validation(parent):
 
 def build_and_update_collections_database():
     """  updates collections installed in the collections folder into the database """
-    collections_folder = pathlib.Path(app_settings.get_setting('penumbra_path')) / "Penumbra" / "collections"
-    app_settings.set_setting(key="collections_folder", value=str(collections_folder.absolute()))
+    collections_folder = pathlib.Path(settings.app_settings.get_setting('penumbra_path')) / "Penumbra" / "collections"
+    settings.app_settings.set_setting(key="collections_folder", value=str(collections_folder.absolute()))
 
-    active_collections_json = pathlib.Path(app_settings.get_setting('penumbra_path')) / "Penumbra" / "active_collections.json"
-    app_settings.set_setting(key="active_collections", value=str(active_collections_json.absolute()))
+    active_collections_json = pathlib.Path(settings.app_settings.get_setting('penumbra_path')) / "Penumbra" / "active_collections.json"
+    settings.app_settings.set_setting(key="active_collections", value=str(active_collections_json.absolute()))
 
     active_collections = helper_functions.load_bom_json(active_collections_json)
     individuals = active_collections.pop("Individuals")
@@ -75,8 +71,8 @@ def build_and_update_collections_database():
 
 def build_and_update_modifications_database():
     """get the mod directory and updates into the modification database"""
-    modification_folder = pathlib.Path(helper_functions.load_bom_json(pathlib.Path(app_settings.get_setting('penumbra_path')) / "Penumbra.json")["ModDirectory"])
-    app_settings.set_setting(key="modification_folder", value=str(modification_folder.absolute()))
+    modification_folder = pathlib.Path(helper_functions.load_bom_json(pathlib.Path(settings.app_settings.get_setting('penumbra_path')) / "Penumbra.json")["ModDirectory"])
+    settings.app_settings.set_setting(key="modification_folder", value=str(modification_folder.absolute()))
 
     if os.path.isdir(modification_folder):
          
@@ -113,12 +109,9 @@ if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, False)
 
 
-
-
-""" this script is the main loop process! """
 def main():
     app = QApplication(sys.argv)
-    app_settings.load_settings()
+    settings.app_settings.load_settings()
     main_gui = MainGui()
     
     # penumbra validation to ensure the plugin is even installed and set up!
@@ -131,7 +124,7 @@ def main():
     main_gui.__post__init__()
     main_gui.show()
 
-    app_settings.save_settings()
+    settings.app_settings.save_settings()
 
     sys.exit(app.exec_())
 

@@ -4,10 +4,11 @@ class AppSettings(object):
     def __init__(self, path) -> None:
         self.path = pathlib.Path(path)
         self.__get__ = {}
-        self.username = ""
-        self.password = ""
+        self.username = "Gabbie"
+        self.password = "test"
         self.user_data = {}
-        
+        self.connected = False
+
     def get_setting(self, key=None):
         """ getter for any key in the settings dictionary! call it without a provided key to get the whole dictionary or pass a
             key value and it returns that settings.

@@ -8,18 +8,13 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtGui import QIcon, QFont
 from qtwidgets import Toggle
 from striprtf.striprtf import rtf_to_text
-from cloud_backend import LoginDialog
-
-import export_process, import_process
+from cloud_backend import LoginDialog, login, upload_file
+import tempfile
+import export_process, import_process, upload_process
 import settings, pathlib, os, sys, icons, easySQL, tables, json, zipfile
 
-global app_settings 
 global status_bar
 global tool_bar
-
-
-app_settings = settings.app_settings
-
 
 class ModificationItem(QTreeWidgetItem):
     def __init__(self):
@@ -33,11 +28,12 @@ class ColectionItem(QListWidgetItem):
 
 class MainGui(QMainWindow):
     def __init__(self) -> None:
+        self.app_settings = settings.app_settings
         super().__init__()
-        self.setWindowTitle(app_settings.get_setting('window_title'))
+        self.setWindowTitle(self.app_settings.get_setting('window_title'))
         self.setMaximumHeight(720)
         self.setMaximumWidth(1280)
-        self.resize(app_settings.get_setting('window_width'), app_settings.get_setting('window_height'))
+        self.resize(self.app_settings.get_setting('window_width'), self.app_settings.get_setting('window_height'))
         self.setWindowIcon(QIcon(icons.window_icon))
 
         self.widget = QWidget()
@@ -74,6 +70,7 @@ class MainGui(QMainWindow):
         self.upload_tool.setToolTip("If a server has been configured alongside a profile on that server, you may upload the collection straight there for others to download without needing to share it.")
         self.upload_tool.setIcon(QIcon(icons.upload_icon))
         self.upload_tool.setEnabled(False)
+        self.upload_tool.triggered.connect(self.upload_collection)
         self.tool_bar.addAction(self.upload_tool)
 
         self.refresh_tool = QAction("Refresh", self)
@@ -282,7 +279,6 @@ class MainGui(QMainWindow):
         self.widget.setLayout(self.horizontal_layout)
         self.setCentralWidget(self.widget)
 
-        self.collection_list.itemClicked.connect(self.populate_details)
         self.selected_item = None
         self.selected_item_meta = {}
         self.selected_item_id = 0
@@ -295,27 +291,29 @@ class MainGui(QMainWindow):
             self.setFont(font)
 
     def __post__init__(self):
+        self.collection_list.itemClicked.connect(self.populate_details)
         self.repopulate_collections()
         self.repopulate_modslist()
+        self.login_user()
 
     def exit_application(self):
-        app_settings.save_settings()
+        self.app_settings.save_settings()
         sys.exit()
 
     def mode_change(self, a):
         if a:
-            self.setWindowTitle(f"{app_settings.get_setting('window_title')} (Advanced Mode)")
-            app_settings.set_setting('advanced_mode', True)
+            self.setWindowTitle(f"{self.app_settings.get_setting('window_title')} (Advanced Mode)")
+            self.app_settings.set_setting('advanced_mode', True)
             self.basic_widget_canvas.setHidden(True)
             self.advanced_widget_canvas.setHidden(False)
         else:
-            self.setWindowTitle(f"{app_settings.get_setting('window_title')} (Basic Mode)")
-            app_settings.set_setting('advanced_mode', False)
+            self.setWindowTitle(f"{self.app_settings.get_setting('window_title')} (Basic Mode)")
+            self.app_settings.set_setting('advanced_mode', False)
             self.advanced_widget_canvas.setHidden(True)
             self.basic_widget_canvas.setHidden(False)
 
 
-        if not app_settings.get_setting('advanced_mode'):
+        if not self.app_settings.get_setting('advanced_mode'):
             self.version_edit.setDisabled(True)
             self.comment_edit.setDisabled(True)
             self.links_list.setDisabled(True)
@@ -331,11 +329,13 @@ class MainGui(QMainWindow):
         
         self.repopulate_modslist()
 
-    def export_collection(self):
+    def get_export_upload_payload(self) -> dict:
         collection_data = easySQL.fetchone_from_table(tables.collections, filter=('collection_id', self.selected_item_id))
         collection_settings = json.loads(collection_data.settings)
         
-
+        # The below process handles the repackaging payload for a collection allowing for advanced changes such
+        # as enabling or putting a modification on ignore.
+        # TODO: enabled_mods and mods_to_copy could be consolidated into a single dictionary
         enabled_mods = {}
         mods_to_copy = []
         count = self.mod_list.topLevelItemCount()
@@ -351,7 +351,7 @@ class MainGui(QMainWindow):
                 except:
                     pass
 
-        payload = {
+        payload: {str, any} = {
             'collection_json':{
                 'Version': collection_data.version,
                 'Name': self.name_edit.text(),
@@ -367,14 +367,24 @@ class MainGui(QMainWindow):
             'mods_to_copy': mods_to_copy
         }
 
-        with open('test.json', 'w+') as file:
-            json.dump(payload, file, indent=2)
-
+        return payload
+    
+    def upload_collection(self):
+        payload = self.get_export_upload_payload()
+ 
+        progress_dialog = upload_process.UploadProgressDialog(self, payload)
+        progress_dialog.start_upload()
+    
+    def export_collection(self):
+    
+        payload = self.get_export_upload_payload()
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.DirectoryOnly)
         if dialog.exec_():
               save_directory = dialog.selectedFiles()[0]
               payload['save_directory'] = save_directory
+              
+              # todo: remove this
               with open('test.json', 'w+') as file:
                   json.dump(payload, file, indent=2)
 
@@ -428,11 +438,23 @@ class MainGui(QMainWindow):
             self.progress_dialog.import_collection()
 
     def login_user(self):
+        switch = False
+
+        if self.app_settings.username != "" and self.app_settings.password != "" and not switch:
+            self.app_settings.user_data = login(self.app_settings.username, self.app_settings.password)
+            self.app_settings.connected = True
+            self.profile_indicator.setIcon(QIcon(self.app_settings.user_data['avatar']))
+            self.profile_indicator.setText(self.app_settings.username)
+            self.database_indicator.setIcon(QIcon(icons.database_good))
+            switch = True
+            return
+        
         dialog = LoginDialog(self)
         if dialog.exec_():
-            app_settings.user_data = dialog.user_data
-            self.profile_indicator.setIcon(QIcon(app_settings.user_data['avatar']))
-            self.profile_indicator.setText(app_settings.username)
+            self.app_settings.user_data = dialog.user_data
+            self.app_settings.connected = True
+            self.profile_indicator.setIcon(QIcon(self.app_settings.user_data['avatar']))
+            self.profile_indicator.setText(self.app_settings.username)
             self.database_indicator.setIcon(QIcon(icons.database_good))
     
     def filter_mods(self):
@@ -451,7 +473,6 @@ class MainGui(QMainWindow):
         self.mod_list.setHeaderLabel('Modification Name')
         self.mod_list.setAlternatingRowColors(True)
 
-        global app_settings
         list = easySQL.fetchall_from_table(tables.modifications) 
         for d, row in enumerate(list):
             
@@ -475,7 +496,7 @@ class MainGui(QMainWindow):
                 item.setHidden(True)
                 item.setDisabled(True)
 
-            if not app_settings.get_setting('advanced_mode'):
+            if not self.app_settings.get_setting('advanced_mode'):
                 item.setDisabled(True)
 
     def repopulate_collections(self):
@@ -512,7 +533,12 @@ class MainGui(QMainWindow):
                 self.links_list.addItem(item)
 
     def populate_details(self, item):
+        
         self.export_tool.setEnabled(True)
+        if self.app_settings.connected: 
+            self.upload_tool.setEnabled(True)
+        else:
+            self.upload_tool.setEnabled(False)
         self.selected_item_id = item.id
         self.selected_item = item
         self.selected_item_data = easySQL.fetchone_from_table(tables.collections, filter=("collection_id", item.id))
@@ -525,8 +551,7 @@ class MainGui(QMainWindow):
         self.version_edit.setText(self.selected_item_meta.version)
         self.comment_edit.setPlainText(self.selected_item_meta.comments)
 
-        global app_settings
-        if not app_settings.get_setting('advanced_mode'):
+        if not self.app_settings.get_setting('advanced_mode'):
             self.version_edit.setDisabled(True)
             self.comment_edit.setDisabled(True)
             self.links_list.setDisabled(True)
