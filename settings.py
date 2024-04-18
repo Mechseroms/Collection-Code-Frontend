@@ -4,8 +4,9 @@ class AppSettings(object):
     def __init__(self, path) -> None:
         self.path = pathlib.Path(path)
         self.__get__ = {}
-        self.username = "Gabbie"
-        self.password = "test"
+        self.username = ""
+        self.password = ""
+        self.connected_server = ""
         self.user_data = {}
         self.connected = False
 

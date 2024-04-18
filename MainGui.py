@@ -294,7 +294,6 @@ class MainGui(QMainWindow):
         self.collection_list.itemClicked.connect(self.populate_details)
         self.repopulate_collections()
         self.repopulate_modslist()
-        self.login_user()
 
     def exit_application(self):
         self.app_settings.save_settings()
@@ -438,23 +437,13 @@ class MainGui(QMainWindow):
             self.progress_dialog.import_collection()
 
     def login_user(self):
-        switch = False
-
-        if self.app_settings.username != "" and self.app_settings.password != "" and not switch:
-            self.app_settings.user_data = login(self.app_settings.username, self.app_settings.password)
-            self.app_settings.connected = True
-            self.profile_indicator.setIcon(QIcon(self.app_settings.user_data['avatar']))
-            self.profile_indicator.setText(self.app_settings.username)
-            self.database_indicator.setIcon(QIcon(icons.database_good))
-            switch = True
-            return
         
         dialog = LoginDialog(self)
         if dialog.exec_():
             self.app_settings.user_data = dialog.user_data
             self.app_settings.connected = True
-            self.profile_indicator.setIcon(QIcon(self.app_settings.user_data['avatar']))
-            self.profile_indicator.setText(self.app_settings.username)
+            self.profile_indicator.setIcon(QIcon(settings.app_settings.user_data['avatar']))
+            self.profile_indicator.setText(settings.app_settings.username)
             self.database_indicator.setIcon(QIcon(icons.database_good))
     
     def filter_mods(self):

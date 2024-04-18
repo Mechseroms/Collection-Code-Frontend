@@ -14,7 +14,7 @@ def penumbra_path_validation(parent):
     if not os.path.exists(settings.app_settings.get_setting('penumbra_path')):
         warning_dialog = QMessageBox(parent)
         warning_dialog.setWindowTitle('Incorrect Penumbra Installation...')
-        warning_dialog.setText(f"""It appears that Penumbra is not installed on your system at: \n{app_settings.get_setting('penumbra_path')}\nThat means this program is useless to you at the moment! Please install Penumbra and follow its instructions before using this application!""")
+        warning_dialog.setText(f"""It appears that Penumbra is not installed on your system at: \n{settings.app_settings.get_setting('penumbra_path')}\nThat means this program is useless to you at the moment! Please install Penumbra and follow its instructions before using this application!""")
         warning_dialog.setIcon(QMessageBox.Warning)
         warning_dialog.setStandardButtons(QMessageBox.Close)
         button = warning_dialog.exec()
