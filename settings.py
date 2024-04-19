@@ -43,6 +43,8 @@ class AppSettings(object):
             with self.path.open('w+') as file:
                 json.dump(self.__get__, file, indent=2)
 
+
+
 global app_settings 
 app_settings = AppSettings('settings.json')
 

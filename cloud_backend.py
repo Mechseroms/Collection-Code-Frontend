@@ -98,7 +98,7 @@ def login(username, password):
         response = requests.post(url, json=data)
         if response.status_code == 200:
             im = Image.open(BytesIO(response.content))
-            im.save(f"icons/avatars/{data['username']}_avatar.png")
+            im.save(f"./icons/avatars/{data['username']}_avatar.png")
             user_data['avatar'] = f"icons/avatars/{data['username']}_avatar.png"
             return user_data
         user_data['avatar'] = f"icons/avatars/default_avatar.png"

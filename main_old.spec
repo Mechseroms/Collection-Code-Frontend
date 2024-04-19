@@ -5,14 +5,13 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('./icons', 'icons')],
+    datas=[('./icons', './icons')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
     excludes=['settings.json', 'database,sqlite'],
     noarchive=False,
-    optimize=0,
 )
 pyz = PYZ(a.pure)
 
@@ -22,7 +21,7 @@ exe = EXE(
     [],
     exclude_binaries=True,
     name='Collection Sharing App',
-    debug=False,
+    debug=True,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
@@ -43,3 +42,4 @@ coll = COLLECT(
     upx_exclude=[],
     name='Collection Sharing App v1.0',
 )
+

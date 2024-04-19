@@ -249,3 +249,5 @@ dist/Collection Sharing App v1.0/wheel-0.42.0.dist-info/WHEEL
 dist/Collection Sharing App v1.0/win32/win32api.pyd
 dist/Collection Sharing App v1.0/win32/win32pdh.pyd
 dist/Collection Sharing App v1.0/yaml/_yaml.cp312-win_amd64.pyd
+build/main/main.exe
+build/main/main.pkg

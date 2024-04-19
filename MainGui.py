@@ -239,15 +239,12 @@ class MainGui(QMainWindow):
         self.basic_group.setLayout(self.group_layout)
         
         
-        text = str()
-        with open("inst_text.rtf", "r+") as _file:
-            text = _file.read()
-
-        text = rtf_to_text(text)
+        
+    
 
         self.label1 = QLabel()
         #self.label1.setAcceptRichText(True)
-        self.label1.setText(text)
+        self.label1.setText("hello World")
         self.label1.setWordWrap(True)
         self.label1.setMinimumWidth(400)
         
