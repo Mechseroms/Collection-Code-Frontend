@@ -1,6 +1,7 @@
 """
 This file contains all Gui and logic directly impacting the exportation processing
 """
+import httpx
 import datetime
 import os 
 import json
@@ -81,6 +82,7 @@ class UploadCollectionThread(QThread):
             self.copy_modifications_to_zip(pcmp_zip_file=pcmp_zip_file)
             self.step_complete.emit(3) 
 
+        
         self.upload_file(filename, self.final_path)
         self.step_complete.emit(4) 
         self.next_step_signal.emit(total_files + 4)
@@ -134,7 +136,22 @@ class UploadCollectionThread(QThread):
         pcmp_zip_file.write(os.path.join(temporary_directory, f"{collection_json['Name']}.json"), f"{collection_json['Name']}.json")
 
     def upload_file(self, filename, path):
-        upload_file(filename, path, self.payload)
+        chunk_size = 10485760
+        url = f"{settings.app_settings.connected_server}/upload_file"
+        total = os.path.getsize(path)
+        self.next_step_signal.emit(0)
+        self.set_progress_bar_max.emit(total)
+        self.indicate_change.emit(f"Uploading to {settings.app_settings.connected_server}...")
+        data = {'filename': filename}
+        total_chunks_transferred = 0
+        with open(path, 'rb') as f:
+            while (chunk := f.read(chunk_size)):
+                response = httpx.post(url, content=chunk, data=data, timeout=None)
+                total_chunks_transferred += len(chunk)
+                self.next_step_signal.emit(total_chunks_transferred)
+                if response.status_code != 200:
+                    break
+
 
 class UploadProgressDialog(QDialog):
     """PyQt5 dialog that displays a QoL checklist and progress bar for the end user during the exportation process.

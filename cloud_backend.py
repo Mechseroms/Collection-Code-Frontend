@@ -63,23 +63,20 @@ class LoginDialog(QDialog):
 
 
 def ping():
-    request = requests.get(f"{settings.app_settings.connected_server}/ping")
+    request = requests.get(f"{settings.app_settings.connected_server}/check_server")
     if request.status_code == 200:
         return True
     return False
 
-def upload_file(filename, file_path, external_data: dict):
-    if ping():
-        external_data['username'] = settings.app_settings.username
-        external_data['password'] = settings.app_settings.password
-        external_data['filename'] = filename
-        files = [
-            ('file', ('file', open(file_path, 'rb'), 'application/octet')),
-            ('datas', ('datas', json.dumps(external_data), 'application/json')),
-        ]
-        r = requests.post(f"{settings.app_settings.connected_server}/upload_app", files=files)
-        return True
-    return False
+def upload_file(filename, file_path, external_data: dict):  
+    external_data['username'] = settings.app_settings.username
+    external_data['password'] = settings.app_settings.password
+    external_data['filename'] = filename
+    files = [
+        ('file', ('file', open(file_path, 'rb'), 'application/octet')),
+        ('datas', ('datas', json.dumps(external_data), 'application/json')),
+    ]
+    r = requests.post(f"{settings.app_settings.connected_server}/upload_app", files=files)
 
 def login(username, password):
     headers = {'Content-Type': 'application/json'}
