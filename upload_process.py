@@ -130,10 +130,10 @@ class UploadCollectionThread(QThread):
         # TODO: figure out how to save a file directly without having to use a temporary directory for it
         with open(os.path.join(temporary_directory, 'meta.json'), 'w') as file:
             json.dump(meta, file, indent=3)
-        with open(os.path.join(temporary_directory, f"{collection_json['Name']}.json"), 'w') as file:
+        with open(os.path.join(temporary_directory, f"{collection_json['Id']}.json"), 'w') as file:
             json.dump(collection_json, file, indent=3)    
         pcmp_zip_file.write(os.path.join(temporary_directory, 'meta.json'), 'meta.json')
-        pcmp_zip_file.write(os.path.join(temporary_directory, f"{collection_json['Name']}.json"), f"{collection_json['Name']}.json")
+        pcmp_zip_file.write(os.path.join(temporary_directory, f"{collection_json['Id']}.json"), f"{collection_json['Id']}.json")
 
     def upload_file(self, filename, path):
         chunk_size = 10485760
@@ -146,12 +146,30 @@ class UploadCollectionThread(QThread):
         total_chunks_transferred = 0
         with open(path, 'rb') as f:
             while (chunk := f.read(chunk_size)):
-                response = httpx.post(url, content=chunk, data=data, timeout=None)
+                files = {'file': (filename, chunk)}
+                response = httpx.post(url, files=files, timeout=None)
                 total_chunks_transferred += len(chunk)
                 self.next_step_signal.emit(total_chunks_transferred)
                 if response.status_code != 200:
                     break
+        
+        headers = {'Content-Type': 'application/json'}
+        meta_data = self.payload['meta_data']
+        collection_json = self.payload['collection_json']
+        character_links = self.payload['character_links']
+        mod_list = self.payload['mods_to_copy']
+        data = {
+            "username": settings.app_settings.username,
+            "password": settings.app_settings.password,
+            "filename": filename,
+            "meta_data": meta_data,
+            "collection_json": collection_json,
+            "character_links": character_links,
+            "mod_list": mod_list
+        }
 
+        response = httpx.post(f"{settings.app_settings.connected_server}/upload_info", headers=headers, json=data)
+        print(response)
 
 class UploadProgressDialog(QDialog):
     """PyQt5 dialog that displays a QoL checklist and progress bar for the end user during the exportation process.

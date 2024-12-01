@@ -5,12 +5,12 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('./icons', 'icons')],
+    datas=[('./icons', './icons')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['settings.json', 'database,sqlite'],
+    excludes=["database.sqlite", "settings.json"],
     noarchive=False,
     optimize=0,
 )
@@ -32,7 +32,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    contents_directory='.',
 )
 coll = COLLECT(
     exe,
@@ -41,5 +40,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='Collection Sharing App v1.0',
+    name='Collection Sharing App V1.0',
 )

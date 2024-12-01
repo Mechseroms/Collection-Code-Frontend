@@ -119,10 +119,10 @@ class ExportCollectionThread(QThread):
         temporary_directory = tempfile.TemporaryDirectory()
         with open(os.path.join(temporary_directory.name, 'meta.json'), 'w') as file:
             json.dump(meta, file, indent=3)
-        with open(os.path.join(temporary_directory.name, f"{collection_json['Name']}.json"), 'w') as file:
+        with open(os.path.join(temporary_directory.name, f"{collection_json['Id']}.json"), 'w') as file:
             json.dump(collection_json, file, indent=3)    
         pcmp_zip_file.write(os.path.join(temporary_directory.name, 'meta.json'), 'meta.json')
-        pcmp_zip_file.write(os.path.join(temporary_directory.name, f"{collection_json['Name']}.json"), f"{collection_json['Name']}.json")
+        pcmp_zip_file.write(os.path.join(temporary_directory.name, f"{collection_json['Id']}.json"), f"{collection_json['Id']}.json")
         temporary_directory.cleanup()
 
 

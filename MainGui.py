@@ -238,10 +238,6 @@ class MainGui(QMainWindow):
         self.group_layout = QGridLayout()
         self.basic_group.setLayout(self.group_layout)
         
-        
-        
-    
-
         self.label1 = QLabel()
         #self.label1.setAcceptRichText(True)
         self.label1.setText("hello World")
@@ -289,6 +285,9 @@ class MainGui(QMainWindow):
 
     def __post__init__(self):
         self.collection_list.itemClicked.connect(self.populate_details)
+        if not settings.app_settings.get_setting("update_opt_in") or settings.app_settings.lock_client:
+            self.profile_indicator.setEnabled(False)
+            self.database_indicator.setEnabled(False)
         self.repopulate_collections()
         self.repopulate_modslist()
 
@@ -350,6 +349,7 @@ class MainGui(QMainWindow):
         payload: {str, any} = {
             'collection_json':{
                 'Version': collection_data.version,
+                'Id': collection_data.uuid,
                 'Name': self.name_edit.text(),
                 'Settings': enabled_mods,
                 'Inheritance': []
@@ -357,6 +357,7 @@ class MainGui(QMainWindow):
             'character_links': json.loads(collection_data.character_links),
             'meta_data': {
                 "collection_name": self.name_edit.text(),
+                "collection_uuid": collection_data.uuid,
                 "version": self.version_edit.text(),
                 "comments": self.comment_edit.toPlainText()
             },
@@ -400,16 +401,16 @@ class MainGui(QMainWindow):
             with zipfile.ZipFile(path_to_zip) as collection_pcmp:
                 
                 
-                collection_name = ''
+                collection_uuid = ''
                 
                 with collection_pcmp.open("meta.json") as _file:
                     meta = json.load(_file)
-                    collection_name = meta["collection_name"]
+                    collection_uuid = meta["collection_uuid"]
 
-                with collection_pcmp.open(f"{collection_name}.json") as _file:
+                with collection_pcmp.open(f"{collection_uuid}.json") as _file:
                     collection_data = json.load(_file)
 
-            if collection_name in [row.name for row in easySQL.fetchall_from_table(tables.collections)]:
+            if collection_uuid in [row.uuid for row in easySQL.fetchall_from_table(tables.collections)]:
                 warning_dialog = QMessageBox(self)
                 warning_dialog.setWindowTitle('Collection already exists...')
                 warning_dialog.setText(f"It appears that this collection already exists, would you like to overwrite it?")
@@ -442,7 +443,7 @@ class MainGui(QMainWindow):
             self.profile_indicator.setIcon(QIcon(settings.app_settings.user_data['avatar']))
             self.profile_indicator.setText(settings.app_settings.username)
             self.database_indicator.setIcon(QIcon(icons.database_good))
-    
+        
     def filter_mods(self):
         filter = self.mod_list_search.text()
         count = self.mod_list.topLevelItemCount()
@@ -461,9 +462,7 @@ class MainGui(QMainWindow):
 
         list = easySQL.fetchall_from_table(tables.modifications) 
         for d, row in enumerate(list):
-            
-            
-            
+
             item = ModificationItem()
             item.setText(0, row.name)
 
@@ -474,7 +473,7 @@ class MainGui(QMainWindow):
 
             item.id = row.mod_id
             self.mod_list.addTopLevelItem(item)
-            
+
             if row.name in present or len(present)==0:
                 item.setHidden(False)
                 item.setDisabled(False)

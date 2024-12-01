@@ -8,10 +8,11 @@ class Collections:
         self.columns = {
             'collection_id': easySQL.INTEGER,
             'version': easySQL.INTEGER,
+            'uuid': easySQL.STRING,
             'name': easySQL.STRING,
             'settings': easySQL.JSON,
             'inheritance': easySQL.JSON,
-            'character_links': easySQL.JSON,
+            'character_links': easySQL.JSON
         }
 
 @easySQL.Table

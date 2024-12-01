@@ -7,8 +7,15 @@ class AppSettings(object):
         self.username = ""
         self.password = ""
         self.connected_server = ""
+        self.port = ""
         self.user_data = {}
         self.connected = False
+        self.external_path = ""
+        self.update_opt_in = False
+        self.update_pipeline = ""
+        self.first_load = False
+        self.app_version = ""
+        self.lock_client = False
 
     def get_setting(self, key=None):
         """ getter for any key in the settings dictionary! call it without a provided key to get the whole dictionary or pass a
@@ -29,12 +36,15 @@ class AppSettings(object):
             with self.path.open('r+') as file:
                 file_contents = json.load(file)
                 self.__get__ = file_contents
+                self.first_load = False
+                self.lock_client = False
         # if not then create it and load in defaults
         else:
             global default_settings
             with self.path.open('w+') as file:
                 json.dump(default_settings, file)
             self.__get__ = default_settings
+            self.first_load = True
 
     def save_settings(self):
         """ Saves the current settings values to self.path! """
@@ -54,5 +64,8 @@ default_settings = {
     "window_height": 400,
     "window_width": 640,
     "penumbra_path": str(pathlib.Path(pathlib.Path.home() / "AppData/Roaming" / "XIVLauncher" / "pluginConfigs").absolute()),
-    "advanced_mode": False
+    "advanced_mode": False,
+    "update_opt_in": False,
+    "update_pipeline": "",
+    "app_version": "alpha_v1.0"
 }

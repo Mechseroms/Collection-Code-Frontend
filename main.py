@@ -1,7 +1,8 @@
 # external modules
-import sys, json, pathlib, os, datetime
+import sys, json, pathlib, os, datetime, requests, tempfile, zipfile, subprocess
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5 import QtCore
+from cloud_backend import UpdateOptInDialog, ping
 
 
 # internal modules
@@ -35,39 +36,42 @@ def build_and_update_collections_database():
     active_collections.pop("Version")
 
     if os.path.isdir(collections_folder):
-        for id, collection_json in enumerate(collections_folder.glob("*")):    
-            data = helper_functions.load_bom_json(collection_json)
-            character_links = {}
-            
-            for key, collection in active_collections.items():
-                if collection == data['Name']:
-                    character_links[key] = True
-                else:
-                    character_links[key] = False
-            
-            collection_indvi = []
-            for individual in individuals:
-                if individual['Collection'] == data['Name']:
-                    collection_indvi.append(individual)
-            
-            character_links['Individuals'] = collection_indvi
-            
-            easySQL.insert_into_table(tables.collections, 
-                (id,
-                data['Version'],
-                data['Name'],
-                json.dumps(data['Settings']),
-                json.dumps(data['Inheritance']),
-                json.dumps(character_links)
+        for id, collection_json in enumerate(collections_folder.glob("*")):
+            file_extension = os.path.splitext(collection_json)[1]
+            if file_extension == ".json":
+                data = helper_functions.load_bom_json(collection_json)
+                character_links = {}
+                
+                for key, collection in active_collections.items():
+                    if collection == data['Name']:
+                        character_links[key] = True
+                    else:
+                        character_links[key] = False
+                
+                collection_indvi = []
+                for individual in individuals:
+                    if individual['Collection'] == data['Name']:
+                        collection_indvi.append(individual)
+                
+                character_links['Individuals'] = collection_indvi
+                
+                easySQL.insert_into_table(tables.collections, 
+                    (id,
+                    data['Version'],
+                    data['Id'],
+                    data['Name'],
+                    json.dumps(data['Settings']),
+                    json.dumps(data['Inheritance']),
+                    json.dumps(character_links)
+                    ))
+                
+                v = datetime.datetime.now().strftime("v%y.%m.%d")
+                easySQL.insert_into_table(tables.metadata, (
+                    id,
+                    data['Name'],
+                    "Dummy Comment",
+                    str(v)
                 ))
-            
-            v = datetime.datetime.now().strftime("v%y.%m.%d")
-            easySQL.insert_into_table(tables.metadata, (
-                id,
-                data['Name'],
-                "Dummy Comment",
-                str(v)
-            ))
 
 def build_and_update_modifications_database():
     """get the mod directory and updates into the modification database"""
@@ -108,12 +112,48 @@ if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
 if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
     QApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, False)
 
-
 def main():
     app = QApplication(sys.argv)
     settings.app_settings.load_settings()
+    settings.app_settings.external_path = pathlib.Path.cwd()
+
     main_gui = MainGui()
     
+    if settings.app_settings.first_load:
+        dialog = UpdateOptInDialog(main_gui, "https://ffxiv.treehousefullofstars.com/update_app/latest")
+        result = dialog.exec()
+        if result == 1:
+            settings.app_settings.set_setting("update_opt_in", dialog.get_opt_in_state())
+            settings.app_settings.set_setting("update_pipeline", dialog.get_pipeline())
+            settings.app_settings.save_settings()
+        else:
+            return False
+
+
+    if settings.app_settings.get_setting("update_opt_in"):
+        pipeline = settings.app_settings.get_setting("update_pipeline")
+        app_version = settings.app_settings.get_setting("app_version")
+        url_break = pipeline.split("/")
+        url = url_break[0] + "//" + url_break[2] + "/check_server"
+        result = ping(url)
+        if result:
+            update_info = requests.get(str(pipeline + "/" + app_version)).json()['data']
+        
+        print(update_info['update_ready'])
+        if update_info['update_ready']:
+            msg_box_name = QMessageBox()
+            msg_box_name.setIcon(QMessageBox.Question)
+            msg_box_name.setWindowTitle("Update Available...")
+            msg_box_name.setText(f"It appears there is an update to the app available.\n\nYour current version is: {app_version}\nThe new version is: {update_info['latest_version']}\n\nPlease update your app, if you decline to then your ability to connect to servers will be disabled!") 
+            msg_box_name.setStandardButtons(QMessageBox.Ok | QMessageBox.No)
+            retval = msg_box_name.exec_()
+
+            if retval == QMessageBox.No:
+                settings.app_settings.lock_client = True
+
+            if retval == QMessageBox.Ok:
+                return False
+
     # penumbra validation to ensure the plugin is even installed and set up!
     penumbra_path_validation(parent=main_gui)
     
@@ -126,11 +166,15 @@ def main():
 
     settings.app_settings.save_settings()
 
+    avatars = pathlib.Path(settings.app_settings.external_path.absolute()) / "avatars"
+    avatars.mkdir(parents=True, exist_ok=True)
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
+    print(sys.argv)
     try: 
         main()
+        sys.exit()
     except Exception as e:
         with open('log.txt', "w+") as file:
             file.write(str(e))

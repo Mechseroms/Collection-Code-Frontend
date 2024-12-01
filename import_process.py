@@ -31,10 +31,11 @@ class ImportCollectionThread(QThread):
         
     def run(self):
         
+        self.collection_uuid = self.payload['meta_data']['collection_uuid']
         self.collection_name = self.payload['meta_data']['collection_name']
         #save collection
         collections_folder = pathlib.Path(app_settings.get_setting('collections_folder'))
-        collection_path = collections_folder / f"{self.collection_name}.json"
+        collection_path = collections_folder / f"{self.collection_uuid}.json"
         
         
         # need to modify collection json for unique tag...
